@@ -120,17 +120,3 @@ def generate_excel(ticker_symbol: str, df: pd.DataFrame):
     wb.save(out_path)
     print(f"Saved Excel: {out_path}")
 
-
-def run(ticker_symbol: str, output: str = "pdf"):
-    fin = fetch_financials(ticker_symbol)
-    df = prepare_data(fin)
-    if output == "pdf":
-        generate_pdf(ticker_symbol, df)
-    elif output == "excel":
-        generate_excel(ticker_symbol, df)
-
-
-run("AAPL", output="pdf")
-run("AAPL", output="excel")
-run("MSFT", output="pdf")
-run("MSFT", output="excel")
