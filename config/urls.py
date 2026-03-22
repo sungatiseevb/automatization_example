@@ -12,11 +12,8 @@ urlpatterns = [
 
 
 if settings.DEBUG:
-    # Путь к вашей папке dist
     dist_path = os.path.join(settings.BASE_DIR, 'tangem-project/dist')
     
-    # 1. Позволяем Django отдавать статику (картинки, стили) по путям без /static/
     urlpatterns += static('/assets/', document_root=os.path.join(dist_path, 'assets'))
     
-    # 2. На всякий случай разрешаем корень dist
     urlpatterns += static('/', document_root=dist_path)
