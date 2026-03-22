@@ -4,9 +4,12 @@ import main
 import yfinance as yf
 import os
 import pickle
+import json
+import pandas as pd
 from main import prepare_data, generate_excel, generate_pdf
 
 PICKLE_DIR = "pickle_data"
+
 
 def fetch_financials(ticker_symbol):
     path = os.path.join(PICKLE_DIR, f"{ticker_symbol}.pkl")
@@ -19,6 +22,19 @@ def fetch_financials(ticker_symbol):
     with open(path, "wb") as f:
         pickle.dump(data, f)
     return data
+
+
+def get_series(fin, row_name):
+    matched = [r for r in fin.index if r.strip() == row_name.strip()]
+    if not matched:
+        return [], []
+    s = fin.loc[matched[0]]
+    filtered = [(str(c.year), v) for c, v in zip(s.index, s.values) if pd.notna(v)]
+    filtered = filtered[::-1]
+    years = [y for y, v in filtered]
+    values = [round(v / 1_000_000_000, 1) for y, v in filtered]
+    return years, values
+
 
 def home(request):
     ticker_symbol = request.GET.get("ticker", "AAPL")
@@ -59,13 +75,20 @@ def home(request):
             "is_up": is_up,
         }
 
-    context = {
-            "ticker": ticker_symbol,
-            "metrics": metrics,
-            "tickers": ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META"],
-        }
-    return render(request, 'index.html', context)
+    years, revenue = get_series(fin, "Total Revenue")
+    _, gross_profit = get_series(fin, "Gross Profit")
+    _, net_income = get_series(fin, "Net Income")
 
+    context = {
+        "ticker": ticker_symbol,
+        "metrics": metrics,
+        "tickers": ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META"],
+        "chart_years": json.dumps(years),
+        "chart_revenue": json.dumps(revenue),
+        "chart_gross_profit": json.dumps(gross_profit),
+        "chart_net_income": json.dumps(net_income),
+    }
+    return render(request, 'index.html', context)
 
 
 def export_excel(request):
@@ -92,7 +115,6 @@ def export_pdf(request):
         generate_pdf(ticker_symbol, df)
 
     return FileResponse(open(out_path, "rb"), as_attachment=True, filename=f"{ticker_symbol}_income_statement.pdf")
-
 
 
 def documentation(request):
